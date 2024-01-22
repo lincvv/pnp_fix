@@ -71,25 +71,25 @@ def popup_text(filename, text):
     win.close()
 
 
-sg.theme("DarkBlue3")
+sg.theme("DarkGrey9")
 sg.set_options(font=("Microsoft JhengHei", 16))
 
 layout_title = [
     [sg.Input(key='-INPUT-', size=(25, 1)),
      sg.FileBrowse(file_types=(("XLSX Files", "*.xlsx"), ("ALL Files", "*.*"))),
      ],
-    [sg.Button("Flip-X", enable_events=True, key='-FLIP-X-', font='Helvetica 16', pad=(15, 10),),
+    [sg.Button("Flip-X", enable_events=True, key='-FLIP-X-', font='Helvetica 16', pad=(45, 10),),
      sg.Button("Flip-Y", enable_events=True, key='-FLIP-Y-', font='Helvetica 16', pad=(15, 0),),
      sg.Checkbox("to mm", key="-CHECKBOX-", default=False, enable_events=True, metadata=False, size=(35, 1))
      ],
 
-    [sg.Text('Rotated:', size=(35, 0), key='-text-', font='Helvetica 16', pad=(55, 0))],
+    [sg.Text("Rotated: {}°".format(rotated), size=(35, 0), key='-text-', font='Helvetica 16', pad=(95, 5))],
     [sg.Button('', enable_events=True, key='-ROTATE-', font='Helvetica 16', image_filename='arrow.png',
-               pad=(70, 0), button_color=('white', 'white')),
+               pad=(110, 0), button_color=('white', 'white')),
      ],
 ]
 
-window = sg.Window('Fix PnP', layout_title, resizable=True, icon="01_nti_blue.ico", auto_size_buttons=True,
+window = sg.Window('Fix PnP', layout_title, resizable=False, icon="01_nti_blue.ico", auto_size_buttons=True,
                    size=(450, 250))
 
 # window = sg.Window('Title', layout_title, size=(350,100))
