@@ -8,10 +8,11 @@ ROTATION_90 = 90
 ROTATION_180 = 180
 ROTATION_0 = 0
 rotated = ROTATION_0
+CONVERTED_FACTOR = 0.0254
 name_pos_x = "PosX"
 name_pos_y = "PosY"
 name_Rot = 'Rot'
-Position = {name_pos_x: list(), name_pos_y: list()}
+# Position = {name_pos_x: list(), name_pos_y: list()}
 
 
 def read_col(sh, col_name):
@@ -40,10 +41,12 @@ def change_data(sh, col_name, list_val, prefix=None):
             break
 
 
-def append_data_to_position(name, column_data):
+def convert_to_mm(name, column_data):
     if column_data[0].value == name:
-        for data in column_data[1:]:
-            Position[name].append(data.value)
+        for data_cell in column_data[1:]:
+            print(format(float(data_cell.value), ".2f"))
+            data_cell.value = format(float(data_cell.value) * CONVERTED_FACTOR, ".2f")
+        wb.save(filename)
 
 
 def calculate_new_rot_value(value):
@@ -72,53 +75,68 @@ sg.theme("DarkBlue3")
 sg.set_options(font=("Microsoft JhengHei", 16))
 
 layout_title = [
-    [sg.Input(key='-INPUT-', size=(35, 1)),
+    [sg.Input(key='-INPUT-', size=(25, 1)),
      sg.FileBrowse(file_types=(("XLSX Files", "*.xlsx"), ("ALL Files", "*.*"))),
-     sg.Button("Read")
+     ],
+    [sg.Button("Flip-X", enable_events=True, key='-FLIP-X-', font='Helvetica 16', pad=(15, 10),),
+     sg.Button("Flip-Y", enable_events=True, key='-FLIP-Y-', font='Helvetica 16', pad=(15, 0),),
+     sg.Checkbox("to mm", key="-CHECKBOX-", default=False, enable_events=True, metadata=False, size=(35, 1))
      ],
 
-    [sg.Text('Rotated:', size=(25, 1), key='-text-', font='Helvetica 16')],
-    [sg.Button('Rotate ->', enable_events=True, key='-ROTATE-', font='Helvetica 16')],
+    [sg.Text('Rotated:', size=(35, 0), key='-text-', font='Helvetica 16', pad=(55, 0))],
+    [sg.Button('', enable_events=True, key='-ROTATE-', font='Helvetica 16', image_filename='arrow.png',
+               pad=(70, 0), button_color=('white', 'white')),
+     ],
 ]
 
-window = sg.Window('Title', layout_title)
+window = sg.Window('Fix PnP', layout_title, resizable=True, icon="01_nti_blue.ico", auto_size_buttons=True,
+                   size=(450, 250))
 
 # window = sg.Window('Title', layout_title, size=(350,100))
 while True:
     event, values = window.read()
     if event in (sg.WIN_CLOSED, 'Exit'):
         break
+
+    elif event == "-CHECKBOX-":
+        filename = values['-INPUT-']
+        if Path(filename).is_file():
+            if values["-CHECKBOX-"]:
+                print("mm")
+                try:
+                    wb = openpyxl.load_workbook(filename)
+                    sheet = wb.active
+                    for column_cell in sheet.iter_cols(1, sheet.max_column):
+                        convert_to_mm(name_pos_x, column_cell)
+                        convert_to_mm(name_pos_y, column_cell)
+                except Exception as e:
+                    print("Error: ", e)
+
     elif event == 'Read':
         filename = values['-INPUT-']
         if Path(filename).is_file():
             try:
                 wb = openpyxl.load_workbook(filename)
                 sheet = wb.active
-                for column_cell in sheet.iter_cols(1, sheet.max_column):
-                    append_data_to_position(name_pos_x, column_cell)
-                    append_data_to_position(name_pos_y, column_cell)
-
-                list_pos_x = Position[name_pos_x]
-                list_pos_y = Position[name_pos_y]
-
-                copied_pos_x = list_pos_x.copy()
-                if list_pos_x[0][0] == NEGATIVE_SIGN and list_pos_y[0][0] == NEGATIVE_SIGN:
-                    # Position[name_pos_x] = strip_negative_sign(list_pos_x)
-                    # Position[name_pos_y] = strip_negative_sign(list_pos_y)
-                    rotated = ROTATION_180
-                elif list_pos_x[0][0] == NEGATIVE_SIGN:
-                    # Position[name_pos_x] = list_pos_y
-                    # Position[name_pos_y] = strip_negative_sign(copied_pos_x)
-                    rotated = ROTATION_90
-                elif list_pos_y[0][0] == NEGATIVE_SIGN:
-                    # Position[name_pos_x] = strip_negative_sign(list_pos_y)
-                    # Position[name_pos_y] = copied_pos_x
-                    rotated = ROTATION_270
-                else:
-                    rotated = ROTATION_0
+                #
+                # copied_pos_x = list_pos_x.copy()
+                # if list_pos_x[0][0] == NEGATIVE_SIGN and list_pos_y[0][0] == NEGATIVE_SIGN:
+                #     # Position[name_pos_x] = strip_negative_sign(list_pos_x)
+                #     # Position[name_pos_y] = strip_negative_sign(list_pos_y)
+                #     rotated = ROTATION_180
+                # elif list_pos_x[0][0] == NEGATIVE_SIGN:
+                #     # Position[name_pos_x] = list_pos_y
+                #     # Position[name_pos_y] = strip_negative_sign(copied_pos_x)
+                #     rotated = ROTATION_90
+                # elif list_pos_y[0][0] == NEGATIVE_SIGN:
+                #     # Position[name_pos_x] = strip_negative_sign(list_pos_y)
+                #     # Position[name_pos_y] = copied_pos_x
+                #     rotated = ROTATION_270
+                # else:
+                #     rotated = ROTATION_0
 
                 text_elem = window['-text-']
-                text_elem.update("Rotated: {}".format(rotated))
+                text_elem.update("Rotated: {}°".format(rotated))
 
             except Exception as e:
                 print("Error: ", e)
@@ -126,8 +144,9 @@ while True:
         rotated += ROTATION_90
         if rotated > ROTATION_270:
             rotated = ROTATION_0
+
         text_elem = window['-text-']
-        text_elem.update("Rotated: {}".format(rotated))
+        text_elem.update("Rotated: {}°".format(rotated))
 
         filename = values['-INPUT-']
         if Path(filename).is_file():
@@ -146,24 +165,6 @@ while True:
                 list_pos_y = read_col(sheet, name_pos_y)
                 change_data(sheet, name_pos_x, list_pos_y, prefix='-')
                 change_data(sheet, name_pos_y, list_pos_x)
-
-                # if rotated == 90:
-                #     read_col(sheet, name_pos_x)
-                #     change_data(sheet, name_pos_x, Position[name_pos_y], prefix='-')
-                #     change_data(sheet, name_pos_y, Position[name_pos_x])
-                #     print(" Change data rotated to 90\n")
-                # elif rotated == 180:
-                #     change_data(sheet, name_pos_x, Position[name_pos_x], prefix='-')
-                #     change_data(sheet, name_pos_y, Position[name_pos_y], prefix='-')
-                #     print(" Change data rotated to 180\n")
-                # elif rotated == 270:
-                #     change_data(sheet, name_pos_x, Position[name_pos_y])
-                #     change_data(sheet, name_pos_y, Position[name_pos_x], prefix='-')
-                #     print(" Change data rotated to 270\n")
-                # else:
-                #     change_data(sheet, name_pos_x, Position[name_pos_x])
-                #     change_data(sheet, name_pos_y, Position[name_pos_y])
-                #     print(" Change data rotated to 0\n")
 
             except Exception as e:
                 print("Error: ", e)
