@@ -7,12 +7,7 @@ ROTATION_270 = 270
 ROTATION_90 = 90
 ROTATION_180 = 180
 ROTATION_0 = 0
-rotated = ROTATION_0
 CONVERTED_FACTOR = 0.0254
-name_pos_x = "PosX"
-name_pos_y = "PosY"
-name_Rot = 'Rot'
-# Position = {name_pos_x: list(), name_pos_y: list()}
 
 
 def read_col(sh, col_name):
@@ -36,7 +31,6 @@ def change_data(sh, col_name, list_val, prefix=None):
                         col_cell[it + 1].value = prefix + list_val[it]
                 else:
                     col_cell[it + 1].value = list_val[it]
-            wb.save(filename)
             break
 
 
@@ -45,7 +39,6 @@ def convert_to_mm(name, column_data):
         for data_cell in column_data[1:]:
             print(format(float(data_cell.value), ".2f",))
             data_cell.value = format(float(data_cell.value) * CONVERTED_FACTOR, ".2f")
-        wb.save(filename)
 
 
 def calculate_new_rot_value(value):
@@ -56,101 +49,81 @@ def strip_negative_sign(pos_list):
     return [item[1:] if item[0] == NEGATIVE_SIGN else item for item in pos_list]
 
 
-def popup_text(filename, text):
+def main():
+    name_pos_x = "PosX"
+    name_pos_y = "PosY"
+    name_rot = 'Rot'
+    rotated = ROTATION_0
+    filename, wb, sheet = None, None, None
 
-    layout = [
-        [sg.Multiline(text, size=(80, 25)),],
+    sg.theme("DarkGrey9")
+    sg.set_options(font=("Microsoft JhengHei", 16))
+
+    layout_title = [
+        [sg.Input(enable_events=True, key='-INPUT-', size=(25, 1)),
+         sg.FileBrowse(key='-FILE-', file_types=(("XLSX Files", "*.xlsx"), ("ALL Files", "*.*"))),
+         ],
+        [sg.Button("Flip-X", enable_events=True, key='-FLIP-X-', font='Helvetica 16', pad=(45, 10),),
+         sg.Button("Flip-Y", enable_events=True, key='-FLIP-Y-', font='Helvetica 16', pad=(15, 0),),
+         sg.Checkbox("to mm", key="-CHECKBOX-", default=False, enable_events=True, metadata=False, size=(35, 1))
+         ],
+
+        [sg.Text("Rotated: {}°".format(rotated), size=(35, 0), key='-text-', font='Helvetica 16', pad=(95, 5))],
+        [sg.Button('', enable_events=True, key='-ROTATE-', font='Helvetica 16', image_filename='arrow.png',
+                   pad=(110, 0), button_color=('white', 'white')),
+         ],
     ]
-    win = sg.Window(filename, layout, modal=True, finalize=True)
+
+    window = sg.Window('Fix PnP', layout_title, resizable=False, icon="01_nti_blue.ico", auto_size_buttons=True,
+                       size=(450, 250))
 
     while True:
-        event, values = win.read()
-        if event == sg.WINDOW_CLOSED:
-            break
-    win.close()
-
-
-sg.theme("DarkGrey9")
-sg.set_options(font=("Microsoft JhengHei", 16))
-
-layout_title = [
-    [sg.Input(key='-INPUT-', size=(25, 1)),
-     sg.FileBrowse(file_types=(("XLSX Files", "*.xlsx"), ("ALL Files", "*.*"))),
-     ],
-    [sg.Button("Flip-X", enable_events=True, key='-FLIP-X-', font='Helvetica 16', pad=(45, 10),),
-     sg.Button("Flip-Y", enable_events=True, key='-FLIP-Y-', font='Helvetica 16', pad=(15, 0),),
-     sg.Checkbox("to mm", key="-CHECKBOX-", default=False, enable_events=True, metadata=False, size=(35, 1))
-     ],
-
-    [sg.Text("Rotated: {}°".format(rotated), size=(35, 0), key='-text-', font='Helvetica 16', pad=(95, 5))],
-    [sg.Button('', enable_events=True, key='-ROTATE-', font='Helvetica 16', image_filename='arrow.png',
-               pad=(110, 0), button_color=('white', 'white')),
-     ],
-]
-
-window = sg.Window('Fix PnP', layout_title, resizable=False, icon="01_nti_blue.ico", auto_size_buttons=True,
-                   size=(450, 250))
-
-# window = sg.Window('Title', layout_title, size=(350,100))
-while True:
-    event, values = window.read()
-    if event in (sg.WIN_CLOSED, 'Exit'):
-        break
-
-    elif event == "-CHECKBOX-":
-        filename = values['-INPUT-']
-        if Path(filename).is_file():
-            if values["-CHECKBOX-"]:
-                print("mm")
+        event, values = window.read()
+        if event == '-INPUT-':
+            print(values['-INPUT-'])
+            filename = values['-INPUT-']
+            if Path(filename).is_file():
                 try:
                     wb = openpyxl.load_workbook(filename)
                     sheet = wb.active
-                    for column_cell in sheet.iter_cols(1, sheet.max_column):
-                        convert_to_mm(name_pos_x, column_cell)
-                        convert_to_mm(name_pos_y, column_cell)
                 except Exception as e:
                     print("Error: ", e)
 
-    elif event == '-FLIP-X-':
-        filename = values['-INPUT-']
-        if Path(filename).is_file():
+        elif event == "-CHECKBOX-":
             try:
-                wb = openpyxl.load_workbook(filename)
-                sheet = wb.active
-
-                change_data(sheet, name_pos_x, read_col(sheet, name_pos_x), prefix='-')
-
-            except Exception as e:
-                print("Error: ", e)
-
-    elif event == '-FLIP-Y-':
-        filename = values['-INPUT-']
-        if Path(filename).is_file():
-            try:
-                wb = openpyxl.load_workbook(filename)
-                sheet = wb.active
-
-                change_data(sheet, name_pos_y, read_col(sheet, name_pos_y), prefix='-')
-
-            except Exception as e:
-                print("Error: ", e)
-
-    elif event == '-ROTATE-':
-        rotated += ROTATION_90
-        if rotated > ROTATION_270:
-            rotated = ROTATION_0
-
-        text_elem = window['-text-']
-        text_elem.update("Rotated: {}°".format(rotated))
-
-        filename = values['-INPUT-']
-        if Path(filename).is_file():
-            try:
-                wb = openpyxl.load_workbook(filename)
-                sheet = wb.active
                 for column_cell in sheet.iter_cols(1, sheet.max_column):
-                    if column_cell[0].value == name_Rot:
-                        cell = column_cell[0]
+                    convert_to_mm(name_pos_x, column_cell)
+                    convert_to_mm(name_pos_y, column_cell)
+                wb.save(filename)
+                print('mm')
+            except Exception as e:
+                print("Error: ", e)
+
+        elif event == '-FLIP-X-':
+            try:
+                change_data(sheet, name_pos_x, read_col(sheet, name_pos_x), prefix='-')
+                wb.save(filename)
+            except Exception as e:
+                print("Error: ", e)
+
+        elif event == '-FLIP-Y-':
+            try:
+                change_data(sheet, name_pos_y, read_col(sheet, name_pos_y), prefix='-')
+                wb.save(filename)
+            except Exception as e:
+                print("Error: ", e)
+
+        elif event == '-ROTATE-':
+            rotated += ROTATION_90
+            if rotated > ROTATION_270:
+                rotated = ROTATION_0
+
+            text_elem = window['-text-']
+            text_elem.update("Rotated: {}°".format(rotated))
+
+            try:
+                for column_cell in sheet.iter_cols(1, sheet.max_column):
+                    if column_cell[0].value == name_rot:
                         for data in column_cell[1:]:
                             data.value = calculate_new_rot_value(data.value)
                         wb.save(filename)
@@ -160,8 +133,15 @@ while True:
                 list_pos_y = read_col(sheet, name_pos_y)
                 change_data(sheet, name_pos_x, list_pos_y, prefix='-')
                 change_data(sheet, name_pos_y, list_pos_x)
-
+                wb.save(filename)
             except Exception as e:
                 print("Error: ", e)
 
-window.close()
+        elif event in (sg.WIN_CLOSED, 'Exit'):
+            break
+
+    window.close()
+
+
+if __name__ == '__main__':
+    main()
