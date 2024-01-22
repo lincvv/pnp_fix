@@ -27,8 +27,7 @@ def read_col(sh, col_name):
 
 def change_data(sh, col_name, list_val, prefix=None):
     for col_cell in sh.iter_cols(1, sh.max_column):  # iterate column cell
-        # print(col_cell)
-        if col_cell[0].value == col_name:    # check for your column
+        if col_cell[0].value == col_name:
             for it in range(len(list_val)):
                 if prefix:
                     if list_val[it][0] == NEGATIVE_SIGN:
@@ -44,7 +43,7 @@ def change_data(sh, col_name, list_val, prefix=None):
 def convert_to_mm(name, column_data):
     if column_data[0].value == name:
         for data_cell in column_data[1:]:
-            print(format(float(data_cell.value), ".2f"))
+            print(format(float(data_cell.value), ".2f",))
             data_cell.value = format(float(data_cell.value) * CONVERTED_FACTOR, ".2f")
         wb.save(filename)
 
@@ -112,34 +111,30 @@ while True:
                 except Exception as e:
                     print("Error: ", e)
 
-    elif event == 'Read':
+    elif event == '-FLIP-X-':
         filename = values['-INPUT-']
         if Path(filename).is_file():
             try:
                 wb = openpyxl.load_workbook(filename)
                 sheet = wb.active
-                #
-                # copied_pos_x = list_pos_x.copy()
-                # if list_pos_x[0][0] == NEGATIVE_SIGN and list_pos_y[0][0] == NEGATIVE_SIGN:
-                #     # Position[name_pos_x] = strip_negative_sign(list_pos_x)
-                #     # Position[name_pos_y] = strip_negative_sign(list_pos_y)
-                #     rotated = ROTATION_180
-                # elif list_pos_x[0][0] == NEGATIVE_SIGN:
-                #     # Position[name_pos_x] = list_pos_y
-                #     # Position[name_pos_y] = strip_negative_sign(copied_pos_x)
-                #     rotated = ROTATION_90
-                # elif list_pos_y[0][0] == NEGATIVE_SIGN:
-                #     # Position[name_pos_x] = strip_negative_sign(list_pos_y)
-                #     # Position[name_pos_y] = copied_pos_x
-                #     rotated = ROTATION_270
-                # else:
-                #     rotated = ROTATION_0
 
-                text_elem = window['-text-']
-                text_elem.update("Rotated: {}°".format(rotated))
+                change_data(sheet, name_pos_x, read_col(sheet, name_pos_x), prefix='-')
 
             except Exception as e:
                 print("Error: ", e)
+
+    elif event == '-FLIP-Y-':
+        filename = values['-INPUT-']
+        if Path(filename).is_file():
+            try:
+                wb = openpyxl.load_workbook(filename)
+                sheet = wb.active
+
+                change_data(sheet, name_pos_y, read_col(sheet, name_pos_y), prefix='-')
+
+            except Exception as e:
+                print("Error: ", e)
+
     elif event == '-ROTATE-':
         rotated += ROTATION_90
         if rotated > ROTATION_270:
