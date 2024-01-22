@@ -85,22 +85,19 @@ while True:
                 list_pos_x = Position[name_pos_x]
                 list_pos_y = Position[name_pos_y]
 
-                list_temp = Position[name_pos_x].copy()
-                if Position[name_pos_x][0][0] == '-' and Position[name_pos_y][0][0] == '-':
-                    for i in range(len(Position[name_pos_x])):
-                        Position[name_pos_x][i] = Position[name_pos_x][i][1:]
-                        Position[name_pos_y][i] = Position[name_pos_y][i][1:]
-                    rotated = ROTATION_180
-                elif Position[name_pos_x][0][0] == '-':
-                    for i in range(len(Position[name_pos_x])):
-                        Position[name_pos_x][i] = Position[name_pos_y][i]
-                        Position[name_pos_y][i] = list_temp[i][1:]
-                    rotated = ROTATION_90
-                elif Position[name_pos_y][0][0] == '-':
-                    for i in range(len(Position[name_pos_x])):
-                        Position[name_pos_x][i] = Position[name_pos_y][i][1:]
-                        Position[name_pos_y][i] = list_temp[i]
-                    rotated = ROTATION_270
+                copied_pos_x = list_pos_x.copy()
+                if list_pos_x[0][0] == NEGATIVE_SIGN and list_pos_y[0][0] == NEGATIVE_SIGN:
+                    Position[name_pos_x] = strip_negative_sign(list_pos_x)
+                    Position[name_pos_y] = strip_negative_sign(list_pos_y)
+                    rotation = ROTATION_180
+                elif list_pos_x[0][0] == NEGATIVE_SIGN:
+                    Position[name_pos_x] = list_pos_y
+                    Position[name_pos_y] = strip_negative_sign(copied_pos_x)
+                    rotation = ROTATION_90
+                elif list_pos_y[0][0] == NEGATIVE_SIGN:
+                    Position[name_pos_x] = strip_negative_sign(list_pos_y)
+                    Position[name_pos_y] = copied_pos_x
+                    rotation = ROTATION_270
                 else:
                     rotated = ROTATION_0
 
