@@ -14,12 +14,28 @@ name_Rot = 'Rot'
 Position = {name_pos_x: list(), name_pos_y: list()}
 
 
+def read_col(sh, col_name):
+    list_data_col = list()
+    for col_cell in sh.iter_cols(1, sh.max_column):
+        if col_cell[0].value == col_name:
+            for cell_data in col_cell[1:]:
+                list_data_col.append(cell_data.value)
+    print(list_data_col)
+    return list_data_col
+
+
 def change_data(sh, col_name, list_val, prefix=None):
     for col_cell in sh.iter_cols(1, sh.max_column):  # iterate column cell
         # print(col_cell)
         if col_cell[0].value == col_name:    # check for your column
             for it in range(len(list_val)):
-                col_cell[it + 1].value = list_val[it] if prefix is None else prefix + list_val[it]
+                if prefix:
+                    if list_val[it][0] == NEGATIVE_SIGN:
+                        col_cell[it + 1].value = list_val[it][1:]
+                    else:
+                        col_cell[it + 1].value = prefix + list_val[it]
+                else:
+                    col_cell[it + 1].value = list_val[it]
             wb.save(filename)
             break
 
@@ -87,17 +103,17 @@ while True:
 
                 copied_pos_x = list_pos_x.copy()
                 if list_pos_x[0][0] == NEGATIVE_SIGN and list_pos_y[0][0] == NEGATIVE_SIGN:
-                    Position[name_pos_x] = strip_negative_sign(list_pos_x)
-                    Position[name_pos_y] = strip_negative_sign(list_pos_y)
-                    rotation = ROTATION_180
+                    # Position[name_pos_x] = strip_negative_sign(list_pos_x)
+                    # Position[name_pos_y] = strip_negative_sign(list_pos_y)
+                    rotated = ROTATION_180
                 elif list_pos_x[0][0] == NEGATIVE_SIGN:
-                    Position[name_pos_x] = list_pos_y
-                    Position[name_pos_y] = strip_negative_sign(copied_pos_x)
-                    rotation = ROTATION_90
+                    # Position[name_pos_x] = list_pos_y
+                    # Position[name_pos_y] = strip_negative_sign(copied_pos_x)
+                    rotated = ROTATION_90
                 elif list_pos_y[0][0] == NEGATIVE_SIGN:
-                    Position[name_pos_x] = strip_negative_sign(list_pos_y)
-                    Position[name_pos_y] = copied_pos_x
-                    rotation = ROTATION_270
+                    # Position[name_pos_x] = strip_negative_sign(list_pos_y)
+                    # Position[name_pos_y] = copied_pos_x
+                    rotated = ROTATION_270
                 else:
                     rotated = ROTATION_0
 
@@ -126,22 +142,28 @@ while True:
                         wb.save(filename)
                         break
 
-                if rotated == 90:
-                    change_data(sheet, name_pos_x, Position[name_pos_y], prefix='-')
-                    change_data(sheet, name_pos_y, Position[name_pos_x])
-                    print(" Change data rotated to 90\n")
-                elif rotated == 180:
-                    change_data(sheet, name_pos_x, Position[name_pos_x], prefix='-')
-                    change_data(sheet, name_pos_y, Position[name_pos_y], prefix='-')
-                    print(" Change data rotated to 180\n")
-                elif rotated == 270:
-                    change_data(sheet, name_pos_x, Position[name_pos_y])
-                    change_data(sheet, name_pos_y, Position[name_pos_x], prefix='-')
-                    print(" Change data rotated to 270\n")
-                else:
-                    change_data(sheet, name_pos_x, Position[name_pos_x])
-                    change_data(sheet, name_pos_y, Position[name_pos_y])
-                    print(" Change data rotated to 0\n")
+                list_pos_x = read_col(sheet, name_pos_x)
+                list_pos_y = read_col(sheet, name_pos_y)
+                change_data(sheet, name_pos_x, list_pos_y, prefix='-')
+                change_data(sheet, name_pos_y, list_pos_x)
+
+                # if rotated == 90:
+                #     read_col(sheet, name_pos_x)
+                #     change_data(sheet, name_pos_x, Position[name_pos_y], prefix='-')
+                #     change_data(sheet, name_pos_y, Position[name_pos_x])
+                #     print(" Change data rotated to 90\n")
+                # elif rotated == 180:
+                #     change_data(sheet, name_pos_x, Position[name_pos_x], prefix='-')
+                #     change_data(sheet, name_pos_y, Position[name_pos_y], prefix='-')
+                #     print(" Change data rotated to 180\n")
+                # elif rotated == 270:
+                #     change_data(sheet, name_pos_x, Position[name_pos_y])
+                #     change_data(sheet, name_pos_y, Position[name_pos_x], prefix='-')
+                #     print(" Change data rotated to 270\n")
+                # else:
+                #     change_data(sheet, name_pos_x, Position[name_pos_x])
+                #     change_data(sheet, name_pos_y, Position[name_pos_y])
+                #     print(" Change data rotated to 0\n")
 
             except Exception as e:
                 print("Error: ", e)
