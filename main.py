@@ -86,16 +86,17 @@ def main():
                 try:
                     wb = openpyxl.load_workbook(filename)
                     sheet = wb.active
+                    text_elem = window['-text-']
+                    text_elem.update("Rotated: {}°".format(ROTATION_0))
                 except Exception as e:
                     print("Error: ", e)
-
+        # TODO: check open file
         elif event == "-CHECKBOX-":
             try:
                 for column_cell in sheet.iter_cols(1, sheet.max_column):
                     convert_to_mm(name_pos_x, column_cell)
                     convert_to_mm(name_pos_y, column_cell)
                 wb.save(filename)
-                print('mm')
             except Exception as e:
                 print("Error: ", e)
 
