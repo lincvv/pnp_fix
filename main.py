@@ -1,6 +1,8 @@
 import PySimpleGUI as sg
 from pathlib import Path
 import openpyxl
+import csv
+import os
 
 NEGATIVE_SIGN = '-'
 ROTATION_270 = 270
@@ -8,6 +10,29 @@ ROTATION_90 = 90
 ROTATION_180 = 180
 ROTATION_0 = 0
 CONVERTED_FACTOR = 0.0254
+
+
+def csv_to_excel(csv_file, excel_file):
+    csv_data = []
+    with open(csv_file) as file_obj:
+        reader = csv.reader(file_obj)
+        for row in reader:
+            csv_data.append(row)
+    wb = openpyxl.Workbook()
+    sheet = wb.active
+    for row in csv_data:
+        sheet.append(row)
+    wb.save(excel_file)
+
+
+def excel_to_csv(csv_file, excel_file):
+    print("to csv")
+    wb = openpyxl.load_workbook(filename=excel_file)
+    ws = wb.active
+    with open(csv_file, 'w', newline="") as file:
+        writer = csv.writer(file)
+        for line in ws.iter_rows():
+            writer.writerow([cell.value for cell in line])
 
 
 def read_col(sh, col_name):
@@ -42,7 +67,7 @@ def convert_to_mm(name, column_data):
 
 
 def calculate_new_rot_value(value):
-    return 0 if int(value) == ROTATION_270 else int(value) + ROTATION_90
+    return 0 if float(value) == ROTATION_270 or float(value) > 360 else float(value) + ROTATION_90
 
 
 def strip_negative_sign(pos_list):
@@ -50,18 +75,18 @@ def strip_negative_sign(pos_list):
 
 
 def main():
-    name_pos_x = "PosX"
-    name_pos_y = "PosY"
-    name_rot = 'Rot'
+    name_pos_x = "x"
+    name_pos_y = "y"
+    name_rot = 'r'
     rotated = ROTATION_0
-    filename, wb, sheet = None, None, None
+    excel_file, csv_file, wb, sheet = None, None, None, None
 
     sg.theme("DarkGrey9")
     sg.set_options(font=("Microsoft JhengHei", 16))
 
     layout_title = [
         [sg.Input(enable_events=True, key='-INPUT-', size=(25, 1)),
-         sg.FileBrowse(key='-FILE-', file_types=(("XLSX Files", "*.xlsx"), ("ALL Files", "*.*"))),
+         sg.FileBrowse(key='-FILE-', file_types=(("CSV Files", "*.csv"), ("ALL Files", "*.*"))),
          ],
         [sg.Button("Flip-X", enable_events=True, key='-FLIP-X-', font='Helvetica 16', pad=(45, 10),),
          sg.Button("Flip-Y", enable_events=True, key='-FLIP-Y-', font='Helvetica 16', pad=(15, 0),),
@@ -81,10 +106,14 @@ def main():
         event, values = window.read()
         if event == '-INPUT-':
             print(values['-INPUT-'])
-            filename = values['-INPUT-']
-            if Path(filename).is_file():
+            csv_file = values['-INPUT-']
+            excel_file = os.path.splitext(csv_file)[0]
+            excel_file = excel_file + ".xlsx"
+            if Path(csv_file).is_file():
                 try:
-                    wb = openpyxl.load_workbook(filename)
+                    if not Path(excel_file).is_file():
+                        csv_to_excel(csv_file, excel_file)
+                    wb = openpyxl.load_workbook(excel_file)
                     sheet = wb.active
                     text_elem = window['-text-']
                     text_elem.update("Rotated: {}°".format(ROTATION_0))
@@ -92,25 +121,29 @@ def main():
                     print("Error: ", e)
         # TODO: check open file
         elif event == "-CHECKBOX-":
+            print("check")
             try:
                 for column_cell in sheet.iter_cols(1, sheet.max_column):
                     convert_to_mm(name_pos_x, column_cell)
                     convert_to_mm(name_pos_y, column_cell)
-                wb.save(filename)
+                wb.save(excel_file)
+                excel_to_csv(csv_file=csv_file, excel_file=excel_file)
             except Exception as e:
                 print("Error: ", e)
 
         elif event == '-FLIP-X-':
             try:
                 change_data(sheet, name_pos_x, read_col(sheet, name_pos_x), prefix='-')
-                wb.save(filename)
+                wb.save(excel_file)
+                excel_to_csv(csv_file=csv_file, excel_file=excel_file)
             except Exception as e:
                 print("Error: ", e)
 
         elif event == '-FLIP-Y-':
             try:
                 change_data(sheet, name_pos_y, read_col(sheet, name_pos_y), prefix='-')
-                wb.save(filename)
+                wb.save(excel_file)
+                excel_to_csv(csv_file=csv_file, excel_file=excel_file)
             except Exception as e:
                 print("Error: ", e)
 
@@ -127,14 +160,16 @@ def main():
                     if column_cell[0].value == name_rot:
                         for data in column_cell[1:]:
                             data.value = calculate_new_rot_value(data.value)
-                        wb.save(filename)
+                        wb.save(excel_file)
+                        excel_to_csv(csv_file=csv_file, excel_file=excel_file)
                         break
 
                 list_pos_x = read_col(sheet, name_pos_x)
                 list_pos_y = read_col(sheet, name_pos_y)
                 change_data(sheet, name_pos_x, list_pos_y, prefix='-')
                 change_data(sheet, name_pos_y, list_pos_x)
-                wb.save(filename)
+                wb.save(excel_file)
+                excel_to_csv(csv_file=csv_file, excel_file=excel_file)
             except Exception as e:
                 print("Error: ", e)
 
