@@ -8,6 +8,8 @@ ROTATION_270 = 270
 ROTATION_90 = 90
 ROTATION_180 = 180
 ROTATION_0 = 0
+
+
 # Make .exe
 # python -m pysimplegui-exemaker.pysimplegui-exemaker
 
@@ -75,7 +77,7 @@ class DataManipulator:
         # print(list_data_col)
         return list_data_col
 
-    def change_data(self, sh, col_name, list_val, prefix=None):
+    def change_data(self, sh, col_name, list_val, prefix=None, point=None):
         for col_cell in sh.iter_cols(1, sh.max_column):  # iterate column cell
             if col_cell[0].value and col_cell[0].value.casefold() == col_name.casefold():
                 for it in range(len(list_val)):
@@ -84,9 +86,19 @@ class DataManipulator:
                             col_cell[it + 1].value = list_val[it][1:]
                         else:
                             col_cell[it + 1].value = prefix + list_val[it]
-                    else:
+                    if point:
+                        col_cell[it + 1].value = format(point - float(list_val[it]), ".2f")
+                    if not prefix and not point:
                         col_cell[it + 1].value = list_val[it]
                 break
+
+    def flipping(self, sheet, axis, point):
+        if point == 0:
+            self.change_data(sheet, axis, self.read_col(sheet, axis),
+                             prefix=self.NEGATIVE_SIGN)
+        elif point > 0:
+            self.change_data(sheet, axis, self.read_col(sheet, axis),
+                             point=point)
 
     def convert_to_mm(self, name, column_data):
         if column_data[0].value and column_data[0].value.casefold() == name.casefold():
@@ -127,8 +139,10 @@ def main():
         [sg.Input(enable_events=True, key='-INPUT-', size=(25, 1)),
          sg.FileBrowse(key='-FILE-', file_types=(("CSV Files", "*.csv"), ("XLSX", ".xlsx"))),
          ],
-        [sg.Button("Flip-X", enable_events=True, key='-FLIP-X-', font='Helvetica 16', pad=(45, 10),),
-         sg.Button("Flip-Y", enable_events=True, key='-FLIP-Y-', font='Helvetica 16', pad=(15, 0),),
+        [sg.Input(enable_events=True, key='-POINT-X-', size=(5, 1), pad=(47, 10), default_text="0"),
+         sg.Input(enable_events=True, key='-POINT-Y-', size=(5, 1), pad=(17, 0), default_text="0")],
+        [sg.Button("Flip-X", enable_events=True, key='-FLIP-X-', font='Helvetica 16', pad=(45, 10), ),
+         sg.Button("Flip-Y", enable_events=True, key='-FLIP-Y-', font='Helvetica 16', pad=(15, 0), ),
          sg.Checkbox("to mm", key="-CHECKBOX-", default=False, enable_events=True, metadata=False, size=(35, 1))
          ],
 
@@ -171,16 +185,14 @@ def main():
 
         elif event == '-FLIP-X-' and is_init:
             try:
-                data_man.change_data(sheet, name_pos_x, data_man.read_col(sheet, name_pos_x),
-                                     prefix=data_man.NEGATIVE_SIGN)
+                data_man.flipping(sheet, name_pos_x, float(values['-POINT-X-']))
             except Exception as e:
                 # print("Error: ", e)
                 print_text(window['-error-'], "Error: {}".format(e))
 
         elif event == '-FLIP-Y-' and is_init:
             try:
-                data_man.change_data(sheet, name_pos_y, data_man.read_col(sheet, name_pos_y),
-                                     prefix=data_man.NEGATIVE_SIGN)
+                data_man.flipping(sheet, name_pos_y, float(values['-POINT-Y-']))
             except Exception as e:
                 # print("Error: ", e)
                 print_text(window['-error-'], "Error: {}".format(e))
