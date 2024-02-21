@@ -216,6 +216,7 @@ def main():
                     print_text(window['-error-'], "Error: {}".format(e))
             else:
                 print_text(window['-error-'], "Error: Wrong file type")
+
         elif event in (sg.WIN_CLOSED, 'Exit'):
             if wb:
                 wb.close()
