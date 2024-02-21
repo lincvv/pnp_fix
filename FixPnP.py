@@ -156,7 +156,7 @@ def main():
     ]
 
     window = sg.Window('FixPnP', layout_title, resizable=False, icon="01_nti_blue.ico", auto_size_buttons=True,
-                       size=(450, 260))
+                       size=(450, 280))
 
     while True:
         event, values = window.read()
